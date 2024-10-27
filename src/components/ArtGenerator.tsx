@@ -21,12 +21,38 @@ const ArtGenerator = () => {
       return;
     }
 
+    const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+    if (!apiKey) {
+      toast({
+        title: "Configuration Error",
+        description: "Please set up your OpenAI API key in the .env file",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
     try {
-      // Simulated API call - replace with actual API integration
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      // For demo, using a placeholder Halloween image
-      setImage("https://source.unsplash.com/random/400x400/?halloween");
+      const response = await fetch('https://api.openai.com/v1/images/generations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          prompt: prompt,
+          n: 1,
+          size: "1024x1024"
+        })
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error?.message || 'Failed to generate image');
+      }
+
+      setImage(data.data[0].url);
       toast({
         title: "Magic Complete! 🎃",
         description: "Your spooky masterpiece is ready!",
@@ -34,7 +60,7 @@ const ArtGenerator = () => {
     } catch (error) {
       toast({
         title: "Something went wrong!",
-        description: "The magic spell failed. Please try again!",
+        description: error instanceof Error ? error.message : "The magic spell failed. Please try again!",
         variant: "destructive",
       });
     } finally {
